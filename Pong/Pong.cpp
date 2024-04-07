@@ -8,6 +8,9 @@
 int width = 800;
 int height = 600;
 
+// Скорость игрока
+int player_speed = 10;
+
 // Позиция и скорость мяча
 float ballX = width / 2;
 float ballY = height / 2;
@@ -29,6 +32,156 @@ float paddle2Speed = 2.0f;
 // Переменные для счета очков
 int playerScore = 0;
 int opponentScore = 0;
+
+// Переменные для хранения координат кнопок выбора сложности
+int easyButtonX = width / 2 - 50;
+int easyButtonY = height / 2 + 20;
+int easyButtonWidth = 100;
+int easyButtonHeight = 20;
+
+int normalButtonX = width / 2 - 50;
+int normalButtonY = height / 2 - 10;
+int normalButtonWidth = 100;
+int normalButtonHeight = 20;
+
+int hardButtonX = width / 2 - 50;
+int hardButtonY = height / 2 - 40;
+int hardButtonWidth = 100;
+int hardButtonHeight = 20;
+
+int impossibleButtonX = width / 2 - 50;
+int impossibleButtonY = height / 2 - 70;
+int impossibleButtonWidth = 100;
+int impossibleButtonHeight = 20;
+
+// Объявляем перечисление для уровня сложности
+enum Difficulty { EASY, NORMAL, HARD, IMPOSSIBLE };
+
+// Переменная для хранения текущего уровня сложности
+Difficulty currentDifficulty =
+    NORMAL;  // По умолчанию устанавливаем нормальный уровень
+
+// Прототипы функций
+void keyboard(unsigned char key, int x, int y);
+void draw();
+void update(int value);
+void mouse(int button, int state, int x, int y);
+void drawMenu();
+void drawScores();
+
+// Функция для обработки событий клика мыши
+void mouse(int button, int state, int x, int y) {
+  if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+    // Получаем цвет пикселя в точке нажатия мыши
+    unsigned char pixel[3];
+    glReadBuffer(GL_FRONT);
+    glReadPixels(x, height - y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixel);
+
+    // Проверяем цвет пикселя и выбираем уровень сложности
+    if (pixel[0] == 255 && pixel[1] == 0 &&
+        pixel[2] == 0) {  // Красный цвет (кнопка Impossible)
+      currentDifficulty = IMPOSSIBLE;
+      ballSpeedX *= 15;
+      ballSpeedY *= 15;
+      paddle2Speed *= 15;
+      player_speed *= 5;
+    } else if (pixel[0] == 0 && pixel[1] == 255 &&
+               pixel[2] == 0) {  // Зеленый цвет (кнопка Easy)
+      currentDifficulty = EASY;
+    } else if (pixel[0] == 0 && pixel[1] == 0 &&
+               pixel[2] == 255) {  // Синий цвет (кнопка Hard)
+      currentDifficulty = HARD;
+      ballSpeedX *= 3;
+      ballSpeedY *= 3;
+      paddle2Speed *= 3;
+      player_speed *= 2;
+    } else if (pixel[0] == 255 && pixel[1] == 255 &&
+               pixel[2] == 0) {  // Желтый цвет (кнопка Normal)
+      currentDifficulty = NORMAL;
+      ballSpeedX *= 1.5;
+      ballSpeedY *= 1.5;
+      paddle2Speed *= 1.5;
+      player_speed *= 1.5;
+    } else {
+      // Нажатие вне области кнопок, устанавливаем уровень сложности по
+      // умолчанию
+      currentDifficulty =
+          NORMAL;  // Например, устанавливаем нормальный уровень сложности
+    }
+
+    // Начинаем игру
+    glutKeyboardFunc(keyboard);
+    glutDisplayFunc(draw);
+    glutTimerFunc(16, update, 0);
+  }
+}
+
+// Функция для отрисовки кнопок выбора сложности
+void drawMenu() {
+  glClear(GL_COLOR_BUFFER_BIT);
+
+  // Отрисовка кнопок выбора сложности
+  glBegin(GL_QUADS);
+  // Кнопка Easy
+  // (зеленый цвет)
+  glColor3f(0.0f, 1.0f, 0.0f);
+  glVertex2f(easyButtonX, easyButtonY);
+  glVertex2f(easyButtonX + easyButtonWidth, easyButtonY);
+  glVertex2f(easyButtonX + easyButtonWidth, easyButtonY + easyButtonHeight);
+  glVertex2f(easyButtonX, easyButtonY + easyButtonHeight);
+  // Кнопка Normal
+  // (желтый цвет)
+  glColor3f(1.0f, 1.0f, 0.0f);
+  glVertex2f(normalButtonX, normalButtonY);
+  glVertex2f(normalButtonX + normalButtonWidth, normalButtonY);
+  glVertex2f(normalButtonX + normalButtonWidth,
+             normalButtonY + normalButtonHeight);
+  glVertex2f(normalButtonX, normalButtonY + normalButtonHeight);
+  // Кнопка Hard
+  // (синий цвет)
+  glColor3f(0.0f, 0.0f, 1.0f);
+  glVertex2f(hardButtonX, hardButtonY);
+  glVertex2f(hardButtonX + hardButtonWidth, hardButtonY);
+  glVertex2f(hardButtonX + hardButtonWidth, hardButtonY + hardButtonHeight);
+  glVertex2f(hardButtonX, hardButtonY + hardButtonHeight);
+  // Кнопка Impossible
+  // (красный цвет)
+  glColor3f(1.0f, 0.0f, 0.0f);
+  glVertex2f(impossibleButtonX, impossibleButtonY);
+  glVertex2f(impossibleButtonX + impossibleButtonWidth, impossibleButtonY);
+  glVertex2f(impossibleButtonX + impossibleButtonWidth,
+             impossibleButtonY + impossibleButtonHeight);
+  glVertex2f(impossibleButtonX, impossibleButtonY + impossibleButtonHeight);
+  glEnd();
+
+  // Вывод текста на кнопках
+  glColor3f(1.0f, 1.0f, 1.0f);  // белый цвет
+  glRasterPos2f(easyButtonX + 20, easyButtonY + 10);
+  std::string easyText = "Easy";
+  for (char c : easyText) {
+    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, c);
+  }
+
+  glRasterPos2f(normalButtonX + 20, normalButtonY + 10);
+  std::string normalText = "Normal";
+  for (char c : normalText) {
+    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, c);
+  }
+
+  glRasterPos2f(hardButtonX + 20, hardButtonY + 10);
+  std::string hardText = "Hard";
+  for (char c : hardText) {
+    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, c);
+  }
+
+  glRasterPos2f(impossibleButtonX + 20, impossibleButtonY + 10);
+  std::string impossibleText = "Impossible";
+  for (char c : impossibleText) {
+    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, c);
+  }
+
+  glutSwapBuffers();
+}
 
 // Функция для отрисовки счетчиков
 void drawScores() {
@@ -117,18 +270,20 @@ void update(int value) {
     opponentScore++;
   }
 
-  // Проверяем границы
+  // Проверяем границы поля и изменяем направление движения шарика при промахе
   if (ballX < 0) {
-    // Мяч пересек левую границу, обнуляем очко игроку
-    playerScore = 0;
-    // Возвращаем мяч в центр
-    ballX = width / 2;
+    // Промах игрока, изменяем направление движения к другому игроку от центра
+    // поля
+    ballSpeedX = ballSpeedX > 0 ? -ballSpeedX : ballSpeedX;
+    ballSpeedY = 0;     // Шарик движется только по горизонтали
+    ballX = width / 2;  // Перемещаем шарик в центр поля
     ballY = height / 2;
   } else if (ballX > width) {
-    // Мяч пересек правую границу, обнуляем очко противнику
-    opponentScore = 0;
-    // Возвращаем мяч в центр
-    ballX = width / 2;
+    // Промах оппонента, изменяем направление движения к другому игроку от
+    // центра поля
+    ballSpeedX = ballSpeedX < 0 ? -ballSpeedX : ballSpeedX;
+    ballSpeedY = 0;     // Шарик движется только по горизонтали
+    ballX = width / 2;  // Перемещаем шарик в центр поля
     ballY = height / 2;
   }
 
@@ -157,10 +312,10 @@ void update(int value) {
 void keyboard(unsigned char key, int x, int y) {
   switch (key) {
     case 'w':
-      paddle1Y += 10;
+      paddle1Y += player_speed;
       break;
     case 's':
-      paddle1Y -= 10;
+      paddle1Y -= player_speed;
       break;
     default:
       break;
@@ -176,9 +331,11 @@ int main(int argc, char** argv) {
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
   gluOrtho2D(0, width, 0, height);
-  glutDisplayFunc(draw);
-  glutTimerFunc(16, update, 0);
-  glutKeyboardFunc(keyboard);
+
+  // Регистрация функций обработки событий мыши и отрисовки заставочного экрана
+  glutMouseFunc(mouse);
+  glutDisplayFunc(drawMenu);
+
   glutMainLoop();
   return 0;
 }
