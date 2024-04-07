@@ -1,5 +1,4 @@
 ﻿#include <cmath>
-#include <iostream>
 
 #include "glut.h"
 
