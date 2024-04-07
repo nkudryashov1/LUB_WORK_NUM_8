@@ -21,6 +21,9 @@ float paddleHeight = 80.0f;
 float paddle1Y = height / 2 - paddleHeight / 2;
 float paddle2Y = height / 2 - paddleHeight / 2;
 
+// Скорость движения платформы противника
+float paddle2Speed = 2.0f;
+
 // Функция для отрисовки
 void draw() {
   glClear(GL_COLOR_BUFFER_BIT);
@@ -57,6 +60,13 @@ void update(int value) {
   ballX += ballSpeedX;
   ballY += ballSpeedY;
 
+  // Проверяем, не выходит ли платформа игрока за пределы игрового поля
+  if (paddle1Y < 0) {
+    paddle1Y = 0;
+  } else if (paddle1Y + paddleHeight > height) {
+    paddle1Y = height - paddleHeight;
+  }
+
   // Проверяем столкновение мяча со стенами
   if (ballY > height - ballRadius || ballY < ballRadius) {
     ballSpeedY = -ballSpeedY;
@@ -78,6 +88,20 @@ void update(int value) {
     ballY = height / 2;
   }
 
+  // Обновляем позицию платформы противника
+  paddle2Y += paddle2Speed;
+
+  // Проверяем, не выходит ли платформа противника за пределы игрового поля
+  if (paddle2Y < 0) {
+    paddle2Y = 0;
+    paddle2Speed =
+        -paddle2Speed;  // Изменяем знак скорости, чтобы двигаться вниз
+  } else if (paddle2Y + paddleHeight > height) {
+    paddle2Y = height - paddleHeight;
+    paddle2Speed =
+        -paddle2Speed;  // Изменяем знак скорости, чтобы двигаться вверх
+  }
+
   // Перерисовываем окно
   glutPostRedisplay();
 
@@ -93,12 +117,6 @@ void keyboard(unsigned char key, int x, int y) {
       break;
     case 's':
       paddle1Y -= 10;
-      break;
-    case 'i':
-      paddle2Y += 10;
-      break;
-    case 'k':
-      paddle2Y -= 10;
       break;
     default:
       break;
