@@ -1,4 +1,6 @@
 ﻿#include <cmath>
+#include <iostream>
+#include <string>
 
 #include "glut.h"
 
@@ -23,6 +25,24 @@ float paddle2Y = height / 2 - paddleHeight / 2;
 
 // Скорость движения платформы противника
 float paddle2Speed = 2.0f;
+
+// Переменные для счета очков
+int playerScore = 0;
+int opponentScore = 0;
+
+// Функция для отрисовки счетчиков
+void drawScores() {
+  // Рисуем счетчики
+  glColor3f(1.0, 1.0, 1.0);  // белый цвет
+  glRasterPos2f(width / 2 - 50, height - 20);
+  glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, '0' + playerScore);
+
+  glRasterPos2f(width / 2 + 20, height - 20);
+  glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, '-');
+
+  glRasterPos2f(width / 2 + 40, height - 20);
+  glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, '0' + opponentScore);
+}
 
 // Функция для отрисовки
 void draw() {
@@ -51,6 +71,19 @@ void draw() {
   glVertex2f(width - paddleWidth, paddle2Y + paddleHeight);
   glEnd();
 
+  // Выводим счет
+  glColor3f(1.0, 1.0, 1.0);  // белый цвет
+  glRasterPos2f(width / 2 - 20, height - 20);
+  std::string playerScoreStr = std::to_string(playerScore);
+  std::string opponentScoreStr = std::to_string(opponentScore);
+  for (char c : playerScoreStr) {
+    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
+  }
+  glRasterPos2f(width / 2 + 20, height - 20);
+  for (char c : opponentScoreStr) {
+    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
+  }
+
   glutSwapBuffers();
 }
 
@@ -76,14 +109,25 @@ void update(int value) {
   if (ballX < paddleWidth && ballY > paddle1Y &&
       ballY < paddle1Y + paddleHeight) {
     ballSpeedX = -ballSpeedX;
+    playerScore++;
   }
   if (ballX > width - paddleWidth && ballY > paddle2Y &&
       ballY < paddle2Y + paddleHeight) {
     ballSpeedX = -ballSpeedX;
+    opponentScore++;
   }
 
   // Проверяем границы
-  if (ballX < 0 || ballX > width) {
+  if (ballX < 0) {
+    // Мяч пересек левую границу, обнуляем очко игроку
+    playerScore = 0;
+    // Возвращаем мяч в центр
+    ballX = width / 2;
+    ballY = height / 2;
+  } else if (ballX > width) {
+    // Мяч пересек правую границу, обнуляем очко противнику
+    opponentScore = 0;
+    // Возвращаем мяч в центр
     ballX = width / 2;
     ballY = height / 2;
   }
