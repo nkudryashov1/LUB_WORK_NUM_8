@@ -1,7 +1,12 @@
-﻿#include <cmath>
+﻿#define _CRT_SECURE_NO_WARNINGS
+#include <algorithm>
+#include <cmath>
 #include <cstdlib>  // Для генерации случайных чисел
+#include <ctime>
+#include <fstream>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include "glut.h"
 
@@ -60,8 +65,112 @@ int impossibleButtonY = height / 2 - 70;
 int impossibleButtonWidth = 100;
 int impossibleButtonHeight = 20;
 
+bool gameOverCondition =
+    false;               // Переменная для определения условия завершения игры
+bool gameEnded = false;  // Флаг, указывающий, что игра завершена
+
 // Объявляем перечисление для уровня сложности
 enum Difficulty { EASY, NORMAL, HARD, IMPOSSIBLE };
+
+struct PlayerRecord {
+  std::string name;
+  int score;
+  time_t date;
+};
+
+std::vector<PlayerRecord> leaderboard;
+
+void loadLeaderboard(const std::string& filename) {
+  std::ifstream file(filename);
+  if (!file.is_open()) {
+    std::cerr << "Error: Couldn't open leaderboard file." << std::endl;
+    return;
+  }
+
+  leaderboard.clear();
+
+  std::string name;
+  int score;
+  time_t date;
+  while (file >> name >> score >> date) {
+    PlayerRecord record;
+    record.name = name;
+    record.score = score;
+    record.date = date;
+    leaderboard.push_back(record);
+  }
+
+  file.close();
+}
+
+void saveLeaderboard(const std::string& filename) {
+  std::ofstream file(filename);
+  if (!file.is_open()) {
+    std::cerr << "Error: Couldn't open leaderboard file." << std::endl;
+    return;
+  }
+
+  for (const auto& record : leaderboard) {
+    file << record.name << " " << record.score << " " << record.date
+         << std::endl;
+  }
+
+  file.close();
+}
+
+void updateLeaderboard(const std::string& playerName, int playerScore) {
+  if (playerScore <= 0) {
+    return;  // Don't update leaderboard if player score is zero
+  }
+
+  PlayerRecord newRecord;
+  newRecord.name = playerName;
+  newRecord.score = playerScore;
+  newRecord.date = std::time(nullptr);
+  leaderboard.push_back(newRecord);
+
+  std::sort(leaderboard.begin(), leaderboard.end(),
+            [](const PlayerRecord& a, const PlayerRecord& b) {
+              return a.score > b.score;
+            });
+
+  if (leaderboard.size() > 5) {
+    leaderboard.resize(5);
+  }
+}
+
+// Функция для отображения текста на экране
+void drawText(float x, float y, std::string text) {
+  glRasterPos2f(x, y);
+  for (char c : text) {
+    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, c);
+  }
+}
+
+// Функция для отображения лидерборда
+void displayLeaderboard() {
+  std::string leaderboardText = "Leaderboard:\n";
+  int lineHeight = 20;  // Высота строки (подстройте под ваши требования)
+  int yOffset = 20;     // Вертикальный отступ от верхнего края
+  int windowWidth = glutGet(GLUT_WINDOW_WIDTH);
+  int windowHeight = glutGet(GLUT_WINDOW_HEIGHT);
+  drawText(0.0f, windowHeight - yOffset, leaderboardText);
+  leaderboardText = "";
+  for (size_t i = 0; i < leaderboard.size(); ++i) {
+    std::tm* timeinfo = std::localtime(&leaderboard[i].date);
+    std::string entry = std::to_string(i + 1) + ". " + leaderboard[i].name +
+                        " - " + std::to_string(leaderboard[i].score) +
+                        " points on " + asctime(timeinfo) + "\n";
+    leaderboardText += entry;
+    // Отображаем текст в левом верхнем углу
+    // Получаем размеры окна
+    int windowWidth = glutGet(GLUT_WINDOW_WIDTH);
+    int windowHeight = glutGet(GLUT_WINDOW_HEIGHT);
+    yOffset += lineHeight;  // Переход к следующей строке
+    drawText(0.0f, windowHeight - yOffset, leaderboardText);
+    leaderboardText = "";
+  }
+}
 
 int paddle1Direction = 0;  // 0 - стоит, 1 - вверх, -1 - вниз
 
@@ -145,7 +254,10 @@ void mouse(int button, int state, int x, int y) {
 
 // Функция для отрисовки кнопок выбора сложности
 void drawMenu() {
+  gameStarted = true;
   glClear(GL_COLOR_BUFFER_BIT);
+  // Загружаем лидерборд при открытии меню
+  loadLeaderboard("leaderboard.txt");
 
   // Отрисовка кнопок выбора сложности
   glBegin(GL_QUADS);
@@ -180,6 +292,19 @@ void drawMenu() {
              impossibleButtonY + impossibleButtonHeight);
   glVertex2f(impossibleButtonX, impossibleButtonY + impossibleButtonHeight);
   glEnd();
+
+  if (gameStarted) {
+    int elapsedTime = glutGet(GLUT_ELAPSED_TIME) - startTime;
+    int seconds = elapsedTime / 1000;  // Преобразование миллисекунд в секунды
+    displayLeaderboard();
+    // Отображение таймера
+    glColor3f(1.0, 1.0, 1.0);        // белый цвет
+    glRasterPos2f(width - 100, 20);  // Позиция на экране
+    std::string timerText = "Time: " + std::to_string(seconds) + "s";
+    for (char c : timerText) {
+      glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
+    }
+  }
 
   // Вывод текста на кнопках
   glColor3f(1.0f, 1.0f, 1.0f);  // белый цвет
@@ -250,19 +375,6 @@ void draw() {
     glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
   }
 
-  if (gameStarted) {
-    int elapsedTime = glutGet(GLUT_ELAPSED_TIME) - startTime;
-    int seconds = elapsedTime / 1000;  // Преобразование миллисекунд в секунды
-
-    // Отображение таймера
-    glColor3f(1.0, 1.0, 1.0);        // белый цвет
-    glRasterPos2f(width - 100, 20);  // Позиция на экране
-    std::string timerText = "Time: " + std::to_string(seconds) + "s";
-    for (char c : timerText) {
-      glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
-    }
-  }
-
   glutSwapBuffers();
 }
 
@@ -317,6 +429,9 @@ void update(int value) {
   if (ballX < 0) {
     // Промах игрока, изменяем направление движения к другому игроку от центра
     // поля
+    gameOverCondition = true;
+    updateLeaderboard("Player", playerScore);
+    saveLeaderboard("leaderboard.txt");
     playerScore = 0;
     ballSpeedX = ballSpeedX > 0 ? ballSpeedX : -ballSpeedX;
     ballSpeedY = 0;           // Шарик движется только по горизонтали
