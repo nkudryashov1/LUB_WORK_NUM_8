@@ -62,6 +62,8 @@ int impossibleButtonHeight = 20;
 // Объявляем перечисление для уровня сложности
 enum Difficulty { EASY, NORMAL, HARD, IMPOSSIBLE };
 
+int paddle1Direction = 0;  // 0 - стоит, 1 - вверх, -1 - вниз
+
 // Переменная для хранения текущего уровня сложности
 Difficulty currentDifficulty =
     NORMAL;  // По умолчанию устанавливаем нормальный уровень
@@ -72,7 +74,24 @@ void draw();
 void update(int value);
 void mouse(int button, int state, int x, int y);
 void drawMenu();
-void drawScores();
+void keyDown(unsigned char key, int x, int y);
+void keyUp(unsigned char key, int x, int y);
+
+// Предположим, это функция, которая вызывается при нажатии клавиши
+void keyDown(unsigned char key, int x, int y) {
+  if (key == 'w') {
+    paddle1Direction = 1;  // Вверх
+  } else if (key == 's') {
+    paddle1Direction = -1;  // Вниз
+  }
+}
+
+// И обратно к 0, когда клавиша отпущена
+void keyUp(unsigned char key, int x, int y) {
+  if (key == 'w' || key == 's') {
+    paddle1Direction = 0;
+  }
+}
 
 // Функция для обработки событий клика мыши
 void mouse(int button, int state, int x, int y) {
@@ -264,16 +283,33 @@ void update(int value) {
     ballSpeedY = -ballSpeedY;
   }
 
-  // Проверяем столкновение мяча с ракетками
+  // Проверяем столкновение мяча с ракеткой игрока
   if (ballX < paddleWidth && ballY > paddle1Y &&
       ballY < paddle1Y + paddleHeight) {
     ballSpeedX = -ballSpeedX;
     playerScore++;
+
+    // Меняем направление по Y в зависимости от направления движения платформы
+    if (paddle1Direction == 1) {          // Если платформа движется вверх
+      ballSpeedY -= 1;                    // Делаем наклон вверх
+    } else if (paddle1Direction == -1) {  // Если платформа движется вниз
+      ballSpeedY += 1;                    // Делаем наклон вниз
+    }
+    // Если платформа стоит на месте, не меняем скорость по Y
   }
+
+  // Аналогично для платформы противника
   if (ballX > width - paddleWidth && ballY > paddle2Y &&
       ballY < paddle2Y + paddleHeight) {
     ballSpeedX = -ballSpeedX;
     opponentScore++;
+
+    // Меняем направление по Y в зависимости от движения платформы
+    if (paddle2Speed < 0) {
+      ballSpeedY -= 1;  // Делаем наклон вверх
+    } else if (paddle2Speed > 0) {
+      ballSpeedY += 1;  // Делаем наклон вниз
+    }
   }
 
   // Проверяем границы поля и изменяем направление движения шарика при промахе
