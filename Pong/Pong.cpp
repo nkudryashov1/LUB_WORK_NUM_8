@@ -4,6 +4,11 @@
 
 #include "glut.h"
 
+// Время начала игры в миллисекундах
+int startTime = 0;
+// Флаг для отслеживания начала игры
+bool gameStarted = false;
+
 // Размеры окна
 int width = 800;
 int height = 600;
@@ -81,9 +86,9 @@ void mouse(int button, int state, int x, int y) {
     if (pixel[0] == 255 && pixel[1] == 0 &&
         pixel[2] == 0) {  // Красный цвет (кнопка Impossible)
       currentDifficulty = IMPOSSIBLE;
-      ballSpeedX *= 15;
-      ballSpeedY *= 15;
-      paddle2Speed *= 15;
+      ballSpeedX *= 10;
+      ballSpeedY *= 10;
+      paddle2Speed *= 20;
       player_speed *= 5;
     } else if (pixel[0] == 0 && pixel[1] == 255 &&
                pixel[2] == 0) {  // Зеленый цвет (кнопка Easy)
@@ -108,6 +113,8 @@ void mouse(int button, int state, int x, int y) {
       currentDifficulty =
           NORMAL;  // Например, устанавливаем нормальный уровень сложности
     }
+    startTime = glutGet(GLUT_ELAPSED_TIME);
+    gameStarted = true;
 
     // Начинаем игру
     glutKeyboardFunc(keyboard);
@@ -183,20 +190,6 @@ void drawMenu() {
   glutSwapBuffers();
 }
 
-// Функция для отрисовки счетчиков
-void drawScores() {
-  // Рисуем счетчики
-  glColor3f(1.0, 1.0, 1.0);  // белый цвет
-  glRasterPos2f(width / 2 - 50, height - 20);
-  glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, '0' + playerScore);
-
-  glRasterPos2f(width / 2 + 20, height - 20);
-  glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, '-');
-
-  glRasterPos2f(width / 2 + 40, height - 20);
-  glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, '0' + opponentScore);
-}
-
 // Функция для отрисовки
 void draw() {
   glClear(GL_COLOR_BUFFER_BIT);
@@ -237,6 +230,19 @@ void draw() {
     glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
   }
 
+  if (gameStarted) {
+    int elapsedTime = glutGet(GLUT_ELAPSED_TIME) - startTime;
+    int seconds = elapsedTime / 1000;  // Преобразование миллисекунд в секунды
+
+    // Отображение таймера
+    glColor3f(1.0, 1.0, 1.0);        // белый цвет
+    glRasterPos2f(width - 100, 20);  // Позиция на экране
+    std::string timerText = "Time: " + std::to_string(seconds) + "s";
+    for (char c : timerText) {
+      glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
+    }
+  }
+
   glutSwapBuffers();
 }
 
@@ -274,6 +280,7 @@ void update(int value) {
   if (ballX < 0) {
     // Промах игрока, изменяем направление движения к другому игроку от центра
     // поля
+    playerScore = 0;
     ballSpeedX = ballSpeedX > 0 ? -ballSpeedX : ballSpeedX;
     ballSpeedY = 0;     // Шарик движется только по горизонтали
     ballX = width / 2;  // Перемещаем шарик в центр поля
@@ -281,6 +288,7 @@ void update(int value) {
   } else if (ballX > width) {
     // Промах оппонента, изменяем направление движения к другому игроку от
     // центра поля
+    opponentScore = 0;
     ballSpeedX = ballSpeedX < 0 ? -ballSpeedX : ballSpeedX;
     ballSpeedY = 0;     // Шарик движется только по горизонтали
     ballX = width / 2;  // Перемещаем шарик в центр поля
