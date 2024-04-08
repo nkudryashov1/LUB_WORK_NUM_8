@@ -1,4 +1,5 @@
 ﻿#include <cmath>
+#include <cstdlib>  // Для генерации случайных чисел
 #include <iostream>
 #include <string>
 
@@ -306,9 +307,9 @@ void update(int value) {
 
     // Меняем направление по Y в зависимости от движения платформы
     if (paddle2Speed < 0) {
-      ballSpeedY -= 1;  // Делаем наклон вверх
+      ballSpeedY -= 3;  // Делаем наклон вверх
     } else if (paddle2Speed > 0) {
-      ballSpeedY += 1;  // Делаем наклон вниз
+      ballSpeedY += 3;  // Делаем наклон вниз
     }
   }
 
@@ -317,18 +318,18 @@ void update(int value) {
     // Промах игрока, изменяем направление движения к другому игроку от центра
     // поля
     playerScore = 0;
-    ballSpeedX = ballSpeedX > 0 ? -ballSpeedX : ballSpeedX;
-    ballSpeedY = 0;     // Шарик движется только по горизонтали
-    ballX = width / 2;  // Перемещаем шарик в центр поля
-    ballY = height / 2;
+    ballSpeedX = ballSpeedX > 0 ? ballSpeedX : -ballSpeedX;
+    ballSpeedY = 0;           // Шарик движется только по горизонтали
+    ballX = width / 2;        // Перемещаем шарик в центр поля
+    ballY = rand() % height;  // Случайная высота в пределах игрового поля
   } else if (ballX > width) {
     // Промах оппонента, изменяем направление движения к другому игроку от
     // центра поля
     opponentScore = 0;
-    ballSpeedX = ballSpeedX < 0 ? -ballSpeedX : ballSpeedX;
-    ballSpeedY = 0;     // Шарик движется только по горизонтали
-    ballX = width / 2;  // Перемещаем шарик в центр поля
-    ballY = height / 2;
+    ballSpeedX = ballSpeedX < 0 ? ballSpeedX : -ballSpeedX;
+    ballSpeedY = 0;           // Шарик движется только по горизонтали
+    ballX = width / 2;        // Перемещаем шарик в центр поля
+    ballY = rand() % height;  // Случайная высота в пределах игрового поля
   }
 
   // Обновляем позицию платформы противника
